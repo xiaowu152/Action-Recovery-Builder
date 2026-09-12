@@ -1,0 +1,33 @@
+name: Build TWRP logands
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install dependencies
+        run: sudo apt update && sudo apt install -y git repo build-essential libncurses5-dev libxml2-utils
+      - name: Prepare source dir
+        run: mkdir -p src
+      - name: Init & Sync Omni twrp-4.4 manifest
+        run: |
+          cd src
+          repo init -u https://github.com/minimal-manifest-twrp/platform_manifest_twrp_omni.git -b twrp-4.4
+          repo sync -j4
+      - name: Clone logands device tree
+        run: |
+          cd src
+          rm -rf device/samsung/logands
+          git clone https://github.com/birey/android_device_logands.git device/samsung/logands
+      - name: Build recovery
+        run: |
+          cd src
+          source build/envsetup.sh
+          lunch omni_logands-eng
+          make -j4 recovery
+      - name: Upload recovery.img
+        uses: actions/upload-artifact@v4
+        with:
+          name: twrp_logands_broadcom
+          path: src/out/target/product/logands/recovery.img
